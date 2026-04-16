@@ -1,0 +1,57 @@
+#PCA from scratch on Iris dataset
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import datasets
+
+# Load Iris (teacher may give CSV; if CSV, use pd.read_csv instead)
+iris = datasets.load_iris()
+X = iris.data                    # (150, 4)
+y = iris.target
+
+# 3.1 Scale the dataset manually
+X_mean = X.mean(axis=0)
+X_std = X.std(axis=0)
+X_scaled = (X - X_mean) / X_std
+
+# 3.2 Covariance matrix
+cov_mat = np.cov(X_scaled.T)     # shape (4, 4)
+
+# 3.3 Eigenvalues and eigenvectors
+eig_vals, eig_vecs = np.linalg.eig(cov_mat)
+
+# 3.4 Sort by eigenvalues (descending)
+idx = np.argsort(eig_vals)[::-1]
+eig_vals_sorted = eig_vals[idx]
+eig_vecs_sorted = eig_vecs[:, idx]
+
+# 3.5 Explained variance and plot
+exp_var = eig_vals_sorted / np.sum(eig_vals_sorted) * 100
+
+k = 2  # teacher may ask for different k
+
+plt.figure(figsize=(8, 4))
+plt.subplot(1, 2, 1)
+plt.bar(range(1, len(eig_vals_sorted) + 1), exp_var, alpha=0.7)
+plt.title("Explained Variance per Principal Component")
+plt.xlabel("Principal component")
+plt.ylabel("Variance (%)")
+
+plt.subplot(1, 2, 2)
+cum = np.cumsum(exp_var)
+plt.plot(range(1, len(cum) + 1), cum, marker="o")
+plt.title("Cumulative explained variance")
+plt.xlabel("Number of components")
+plt.ylabel("Cumulative variance (%)")
+plt.axhline(100, c="k", linestyle="--", alpha=0.5)
+plt.show()
+
+# 3.6 Choose first k eigenvectors
+W_k = eig_vecs_sorted[:, :k]     # (4, k)
+
+# 3.7 Transform original matrix
+X_pca = X_scaled @ W_k           # (150, k)
+
+print("Original shape:", X_scaled.shape)
+print("Transformed shape:", X_pca.shape)

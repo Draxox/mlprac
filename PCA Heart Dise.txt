@@ -1,0 +1,74 @@
+#PCA on Heart Disease dataset
+
+# (b) Load dataset
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np # Added numpy import
+
+# Download the dataset if not present
+!wget -nc https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/cleveland.data -O heart.csv
+
+# Define column names based on UCI documentation for cleveland.data
+# The dataset technically has 76 attributes, though often only 14 are analyzed.
+# We define 76 generic column names to ensure pandas parses all available fields,
+# as inconsistent row lengths can cause ParserErrors if the number of columns is inferred.
+num_expected_cols = 76
+column_names = [f'attr_{i+1}' for i in range(num_expected_cols)]
+
+df = pd.read_csv("heart.csv", header=None, encoding='latin1', sep=r'\s+', engine='python', names=column_names, on_bad_lines='warn')
+print(df.head())
+
+# The dataset from UCI often lacks headers and contains '?' for missing values.
+# We need to handle this.
+# Replacing '?' with NaN and then converting to numeric.
+# Note: Some sources of this dataset also use '-9' or other values for missing data,
+# which might also need to be handled if they are not converted by to_numeric.
+df = df.replace('?', np.nan)
+# Convert all columns to numeric. Non-convertible values will become NaN.
+df = df.apply(pd.to_numeric, errors='coerce')
+
+# From the 76 columns, the standard heart disease prediction task typically uses 14 features.
+# These correspond to the first 14 columns of the cleveland.data file.
+# Let's select these relevant columns.
+# Adjusting to 0-indexed columns for Python.
+relevant_columns_indices = list(range(14)) # Assuming first 14 are relevant
+df_relevant = df.iloc[:, relevant_columns_indices]
+
+# Now, handle missing values in the relevant subset.
+# For simplicity, we'll drop rows with any NaN values in these features for PCA.
+df_relevant = df_relevant.dropna()
+
+# Check if any non-numeric columns; if yes, remove or handle.
+# After pd.to_numeric and dropna, all should be numeric.
+X = df_relevant.select_dtypes(include=[np.number])
+
+# (c) Scale the dataset
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# (d) Select principal components
+from sklearn.decomposition import PCA
+
+pca = PCA()
+X_pca = pca.fit_transform(X_scaled)
+
+# Option 1: select k components (e.g., k=2)
+k = 2
+pca_k = PCA(n_components=k)
+X_k = pca_k.fit_transform(X_scaled)
+
+print("Original shape:", X_scaled.shape)
+print("PCA-transformed shape (k components):", X_k.shape)
+
+# Optionally: plot explained variance (good for exam)
+plt.figure(figsize=(8, 4))
+cum_var = np.cumsum(pca.explained_variance_ratio_)
+plt.plot(range(1, len(cum_var) + 1), cum_var, marker="o")
+plt.xlabel("Number of components")
+plt.ylabel("Cumulative explained variance")
+plt.axhline(1.0, linestyle="--", alpha=0.5)
+plt.grid(True)
+plt.show()

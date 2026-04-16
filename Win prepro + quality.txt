@@ -1,0 +1,28 @@
+#WineData – preprocessing + quality mapping
+
+# Download the wine dataset from UCI repository
+!wget https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv -O wine.csv
+
+# 1(a) Load data
+import pandas as pd
+
+df = pd.read_csv("wine.csv", sep=';')   # or full path
+print(df.head())
+
+# 1(b) Check and remove rows with null
+print(df.isnull().sum())
+df.dropna(inplace=True)  # axis=0 already default
+
+# 1(c) Add new quality category column
+def map_quality(x):
+    if x <= 4:
+        return "Bad"
+    elif 5 <= x <= 7:
+        return "Average"
+    else:
+        return "Good"
+
+df["quality_grade"] = df["quality"].apply(map_quality)
+
+# 1(d) Display the data
+print(df.head())

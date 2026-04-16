@@ -1,0 +1,79 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.style.use("seaborn-v0_8")
+
+df = pd.read_csv("/content/us_pop_by_state.csv")
+df.head()
+
+df.info()
+
+df.isnull().sum()
+
+df_states = df[df['state'] != 'Total U.S.']
+top10 = df_states.sort_values("2020_census", ascending=False).head(10)
+
+plt.figure(figsize=(10,5))
+sns.barplot(data=top10, x="state", y="2020_census")
+plt.title("Top 10 Most Populous U.S. States (2020)")
+plt.xlabel("State")
+plt.ylabel("Population")
+plt.xticks(rotation=45)
+plt.show()
+
+top5 = df_states.sort_values("2020_census", ascending=False).head(5)
+
+plt.figure(figsize=(7,7))
+plt.pie(
+    top5["2020_census"],
+    labels=top5["state"],
+    autopct="%1.1f%%",
+    startangle=90,
+    wedgeprops={'edgecolor': 'black'}
+)
+
+plt.title("Population Share of Top 5 States (2020)")
+plt.show()
+
+
+
+plt.figure(figsize=(8,5))
+plt.hist(df_states["2020_census"], bins=10)
+plt.title("Histogram of State-wise Population (2020)")
+plt.xlabel("Population")
+plt.ylabel("Number of States")
+plt.show()
+
+plt.figure(figsize=(10,5))
+sns.barplot(data=top10, x="state", y=top10["percent_of_total"]*100)
+plt.title("Top 10 States by Percentage of Total U.S. Population")
+plt.xlabel("State")
+plt.ylabel("Percent of Total Population (%)")
+plt.xticks(rotation=45)
+plt.show()
+
+Q1 = df["2020_census"].quantile(0.25)
+Q3 = df["2020_census"].quantile(0.75)
+IQR = Q3 - Q1
+
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+lower_bound, upper_bound
+
+outliers = df[
+    (df["2020_census"] < lower_bound) |
+    (df["2020_census"] > upper_bound)
+]
+
+outliers[["state", "2020_census"]]
+
+df_filtered = df[df['state'] != 'Total U.S.']
+
+plt.figure(figsize=(6,5))
+sns.boxplot(y=df_filtered["2020_census"])
+plt.title("Boxplot of State-wise Population (2020)")
+plt.ylabel("Population")
+plt.show()

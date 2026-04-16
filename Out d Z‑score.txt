@@ -1,0 +1,37 @@
+ #Outlier detection with Z‑score
+
+import pandas as pd
+import numpy as np
+
+# 2(a) Read and show first 20 rows
+df = pd.read_csv("/content/sample_data/california_housing_train.csv")   # <<-- CHANGE THIS FILENAME TO YOUR ACTUAL DATASET FILE
+print(df.head(20))
+
+# Take one numeric column for example
+col = "housing_median_age"   # teacher may change to any numeric column
+data = df[col]
+
+# 2(b) Compute Z‑score and threshold
+from scipy import stats
+
+z = np.abs(stats.zscore(data))
+
+threshold = 3
+outliers_mask = z > threshold
+outlier_indices = np.where(outliers_mask)[0]
+
+print("Outlier indices:", outlier_indices)
+
+# 2(c) Percentage of outliers
+total = len(data)
+num_outliers = len(outlier_indices)
+pct_outliers = (num_outliers / total) * 100
+print("Percentage of outliers:", pct_outliers)
+
+# 2(d) Remove outliers if percentage <= 30%
+if pct_outliers <= 30:
+    df_clean = df.loc[~outliers_mask]
+    print("Outliers removed. New shape:", df_clean.shape)
+else:
+    df_clean = df
+    print("Outlier percentage > 30%, no removal.")

@@ -1,0 +1,40 @@
+Dtaa visula
+
+import pandas as pd
+
+data = {
+    "student_id": ["S001","S002","S003","S004","S005","S006","S007","S008","S009","S010",
+                   "S011","S012","S013","S014","S015"],
+    "course_category": ["DS","AI","Web","Cloud","DS","AI","Web","Cloud","DS","AI",
+                        "Web","Cloud","DS","AI","Web"],
+    "time_spent_hours": [120,40,75,50,140,30,90,65,25,110,55,130,95,20,100],
+    "videos_watched": [85,30,60,35,95,20,70,45,18,80,40,90,72,12,78],
+    "quiz_attempts": [10,4,8,5,12,3,9,6,2,10,5,11,9,1,10],
+    "avg_quiz_score": [88,55,72,60,92,48,80,68,40,85,62,90,78,30,82],
+    "forum_posts": [12,2,6,1,15,0,8,3,0,10,4,14,7,0,9],
+    "completion_status": [1,0,1,0,1,0,1,1,0,1,0,1,1,0,1]
+}
+
+df = pd.DataFrame(data)
+df.head()
+
+
+df.info()
+
+df.isnull().sum()
+
+
+df.describe()
+
+df.groupby("course_category").mean(numeric_only=True)
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.boxplot(x="completion_status", y="time_spent_hours", data=df)
+plt.title("Time Spent vs Completion Status")
+plt.show()
+
+sns.heatmap(df.corr(numeric_only=True), annot=True, cmap="coolwarm")
+plt.title("Correlation Between Engagement & Completion")
+plt.show()
