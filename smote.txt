@@ -1,0 +1,114 @@
+smote
+
+#Imports + load data
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, precision_recall_fscore_support
+from imblearn.over_sampling import SMOTE
+
+# Load dataset (from Kaggle: https://www.kaggle.com/mlg-ulb/creditcardfraud)
+df = pd.read_csv("creditcard.csv")
+
+print("Dataset shape:", df.shape)
+print("Class distribution (fraud vs normal):")
+print(df["Class"].value_counts())
+
+# 1. Analyze class distribution (fraud = 1, normal = 0)
+sns.countplot(x="Class", data=df)
+plt.title("Class distribution (imbalanced)")
+plt.show()
+
+#Train on imbalanced data (Decision Tree + Random Forest)
+# Define features and target
+X = df.drop("Class", axis=1)
+y = df["Class"]
+
+# Train/test split (stratify to keep same imbalance)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42, stratify=y
+)
+
+# 1.1 Decision Tree (before SMOTE)
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train, y_train)
+y_pred_dt = dt.predict(X_test)
+
+print("\n=== Decision Tree (IMBALANCED) ===")
+print("Classification Report:")
+print(classification_report(y_test, y_pred_dt))
+
+# 1.2 Random Forest (before SMOTE)
+rf = RandomForestClassifier(random_state=42)
+rf.fit(X_train, y_train)
+y_pred_rf = rf.predict(X_test)
+
+print("\n=== Random Forest (IMBALANCED) ===")
+print("Classification Report:")
+print(classification_report(y_test, y_pred_rf))
+
+#Apply SMOTE to balance training set
+# 2.1 Apply SMOTE only on training set (never on test!)
+smote = SMOTE(random_state=42)
+X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+print("Class distribution BEFORE SMOTE (train):")
+print(pd.Series(y_train).value_counts())
+
+print("Class distribution AFTER SMOTE (train):")
+print(pd.Series(y_train_smote).value_counts())
+
+sns.countplot(x=y_train_smote)
+plt.title("Class distribution after SMOTE (train)")
+plt.show()
+
+#Retrain models on balanced (SMOTE) data
+# 3.1 Decision Tree on SMOTE‑balanced data
+dt_smote = DecisionTreeClassifier(random_state=42)
+dt_smote.fit(X_train_smote, y_train_smote)
+y_pred_dt_smote = dt_smote.predict(X_test)
+
+print("\n=== Decision Tree (SMOTE‑balanced) ===")
+print("Classification Report:")
+print(classification_report(y_test, y_pred_dt_smote))
+
+# 3.2 Random Forest on SMOTE‑balanced data
+rf_smote = RandomForestClassifier(random_state=42)
+rf_smote.fit(X_train_smote, y_train_smote)
+y_pred_rf_smote = rf_smote.predict(X_test)
+
+print("\n=== Random Forest (SMOTE‑balanced) ===")
+print("Classification Report:")
+print(classification_report(y_test, y_pred_rf_smote))
+
+#Compare: Before vs After SMOTE (focus on Recall & trade‑off)
+# Extract scores for positive (fraud) class only (label=1)
+def get_fraud_metrics(y_true, y_pred):
+    _, _, f1, _ = precision_recall_fscore_support(y_true, y_pred, average=None)
+    p_0, p_1 = _, _  # but better to rely on classification_report lines
+    r_0, r_1 = _, _
+    pr = classification_report(y_true, y_pred, output_dict=True)
+    precision = pr["1"]["precision"]
+    recall = pr["1"]["recall"]
+    f1 = pr["1"]["f1-score"]
+    return precision, recall, f1
+
+# For Decision Tree
+p1_imb_dt, r1_imb_dt, f1_imb_dt = get_fraud_metrics(y_test, y_pred_dt)
+p1_smote_dt, r1_smote_dt, f1_smote_dt = get_fraud_metrics(y_test, y_pred_dt_smote)
+
+print("\n--- Decision Tree (Fraud class 1) ---")
+print(f"Before SMOTE:  Precision={p1_imb_dt:.3f}, Recall={r1_imb_dt:.3f}, F1={f1_imb_dt:.3f}")
+print(f"After SMOTE:   Precision={p1_smote_dt:.3f}, Recall={r1_smote_dt:.3f}, F1={f1_smote_dt:.3f}")
+
+# For Random Forest
+p1_imb_rf, r1_imb_rf, f1_imb_rf = get_fraud_metrics(y_test, y_pred_rf)
+p1_smote_rf, r1_smote_rf, f1_smote_rf = get_fraud_metrics(y_test, y_pred_rf_smote)
+
+print("\n--- Random Forest (Fraud class 1) ---")
+print(f"Before SMOTE:  Precision={p1_imb_rf:.3f}, Recall={r1_imb_rf:.3f}, F1={f1_imb_rf:.3f}")
+print(f"After SMOTE:   Precision={p1_smote_rf:.3f}, Recall={r1_smote_rf:.3f}, F1={f1_smote_rf:.3f}")
