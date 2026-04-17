@@ -1,0 +1,141 @@
+#feasleccorrchi
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.feature_selection import chi2
+from sklearn.preprocessing import LabelEncoder
+
+df = pd.read_csv("your_dataset.csv")   # dataframe with features and target
+X_num = df.select_dtypes(include=[np.number]).drop("target", axis=1, errors="ignore")
+y = df["target"]                        # categorical for chi‑square
+
+#Feature Selection using Correlation (Pearson)
+# 1. Compute correlation matrix (all numeric features)
+X_with_target = X_num.copy()
+X_with_target["target"] = y
+
+corr_matrix = X_with_target.corr()
+print("Full correlation matrix:")
+print(corr_matrix)
+
+# 2. Get absolute correlation with target (most common exam pattern)
+corr_with_target = corr_matrix["target"].abs().sort_values(ascending=False)
+
+print("\nCorrelation with target (descending):")
+print(corr_with_target)
+
+# 3. Select top k features (example: top 5)
+k = 5
+selected_corr_features = corr_with_target[1:k+1].index   # skip "target" itself
+print("\nSelected features (by correlation with target):", selected_corr_features.tolist())
+
+# 4. Optional: heatmap of correlation with target
+plt.figure(figsize=(4, 6))
+sns.heatmap(corr_with_target.to_frame(), annot=True, cmap="coolwarm", center=0)
+plt.title("Correlation with target")
+plt.show()
+
+#Feature Selection using Chi‑square test
+# If features are numeric, you can still use chi2 if regarded as “counts/bins”
+X_chi = X_num.values   # numeric matrix (n_samples, n_features)
+y_chi = y.astype(str)  # ensure categorical
+
+# If features are truly categorical, first encode them (e.g., Ordinal or One‑Hot)
+# For ordinal: use LabelEncoder per column if needed.
+
+# Compute chi‑square statistics and p‑values
+chi2_vals, p_vals = chi2(X_chi, y_chi)
+
+# 1. Show chi2 score and p‑value per feature
+feature_names = X_num.columns
+
+chi2_df = pd.DataFrame({
+    "feature": feature_names,
+    "chi2_score": chi2_vals,
+    "p_value": p_vals
+}).sort_values("chi2_score", ascending=False)
+
+print("Chi‑square feature scores (descending):")
+print(chi2_df)
+
+# 2. Select top k features by chi2 score
+k_chi = 5
+selected_chi_features = chi2_df.iloc[:k_chi]["feature"].values
+print("\nSelected features (by chi2 score):", selected_chi_features.tolist())
+
+#full feature scaling chi sqaure for label/ordinal encoding and one hot
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.feature_selection import chi2
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+
+#Load and separate numeric / categorical:
+df = pd.read_csv("your_dataset.csv")   # teacher can change filename
+
+# Assume target column is "target"
+y = df["target"]
+X = df.drop("target", axis=1)
+
+# Get numeric and categorical columns
+num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
+cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
+
+print("Numeric columns:", num_cols)
+print("Categorical columns:", cat_cols)
+
+# Ordinal Encoding (Label Encoding for each categorical column)
+X_enc = X.copy()
+
+# Apply LabelEncoder to each categorical column
+encoders = {}
+for col in cat_cols:
+    le = LabelEncoder()
+    X_enc[col] = le.fit_transform(X[col].astype(str))
+    encoders[col] = le   # save if needed later
+
+#now X_enc is numeric apply correlation based feature selection
+# Combine with target for correlation
+X_corr = X_enc.copy()
+X_corr["target"] = y
+
+corr_matrix = X_corr.corr()
+corr_with_target = corr_matrix["target"].abs().sort_values(ascending=False)
+
+k_corr = 5
+selected_corr_features = corr_with_target[1:k_corr+1].index   # skip "target"
+print("Correlation‑selected features:", selected_corr_features.tolist())
+
+#One‑Hot Encoding (for chi‑square / general use)
+# Re‑read X to avoid using already label‑encoded version
+X_oh = X.copy()
+
+# Apply one‑hot encoding to all categorical columns
+X_oh = pd.get_dummies(X_oh, columns=cat_cols, drop_first=True)   # drop_first to avoid full dummy trap
+
+# If needed, scale numeric columns (optional, up to exam question)
+scaler = StandardScaler()
+X_oh[num_cols] = scaler.fit_transform(X_oh[num_cols])
+
+print("Shape after one‑hot:", X_oh.shape)
+
+# Use all numeric / one‑hot columns for chi‑square
+X_chi = X_oh.values
+y_chi = y.astype(str)   # ensure categorical
+
+chi2_vals, p_vals = chi2(X_chi, y_chi)
+
+chi2_df = pd.DataFrame({
+    "feature": X_oh.columns,
+    "chi2_score": chi2_vals,
+    "p_value": p_vals
+}).sort_values("chi2_score", ascending=False)
+
+k_chi = 5
+selected_chi_features = chi2_df.iloc[:k_chi]["feature"].values
+print("\nChi‑square selected features:", selected_chi_features.tolist())
